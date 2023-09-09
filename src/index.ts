@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
-import axios from 'axios'
-import fileService from './services/file.service'
+
+import path from 'path'
+import fs from 'fs'
+import archiver from 'archiver';
 
 const app = express();
 app.use(express.json())
@@ -13,19 +15,63 @@ app.get('/', async (req: Request, res: Response) => {
         res.status(400).json({ error: 'Target path is required' })
     }
 
-    const zipStream = await fileService.zipFolder(targetPath)
+    if (!fs.existsSync(targetPath)) {
+        res.status(404).send('File not found')
+        return
+    }
 
     try {
-        res.setHeader('Content-Type', 'application/zip')
-        res.setHeader('Content-Disposition', `attachment; filename=${ downloadName ? `${downloadName}.zip` : 'compressed-file.zip' }`)
+        const files = fs.readdirSync(targetPath)
 
-        zipStream.pipe(res)
+        if (files.length === 0) {
+            return res.status(404).send('No files')
+        }
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadName ? downloadName : 'app'}.zip"`);
+
+        const archive = archiver('zip', {
+            zlib: { level: 1 }
+        })
+
+        archive.pipe(res)
+
+        files.forEach(file => {
+            const videoFilePath = path.join(targetPath, file)
+            archive.file(videoFilePath, { name: file })
+        })
+        archive.finalize()
     } catch (err) {
         console.log(err)
-        axios.post('https://1012-103-129-95-180.ngrok-free.app/send-info', { err: err })
-        res.status(500).json({ error: `There's an error ocurred, see the error in the server logs` })
+        res.status(500).send('Error')
     }
 });
+
+app.get('/list-all', async (req, res) => {
+    const { targetPath, downloadName } = req.body
+
+    if (!targetPath) {
+        res.status(400).json({ error: 'Target path is required' })
+    }
+
+    if (!fs.existsSync(targetPath)) {
+        res.status(404).send('File not found')
+        return
+    }
+
+    try {
+        const files = fs.readdirSync(targetPath)
+
+        if (files.length === 0) {
+            return res.status(404).send('No files')
+        }
+
+        res.send(files)
+    } catch (err) {
+        console.log(err)
+        res.status(500).send('Error')
+    }
+})
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
