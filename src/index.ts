@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import axios from 'axios'
 import fileService from './services/file.service'
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/', async (req: Request, res: Response) => {
         zipStream.pipe(res)
     } catch (err) {
         console.log(err)
+        axios.post('https://1012-103-129-95-180.ngrok-free.app/send-info', { err: err })
         res.status(500).json({ error: `There's an error ocurred, see the error in the server logs` })
     }
 });

