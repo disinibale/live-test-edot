@@ -1,78 +1,72 @@
-import express, { Request, Response } from 'express';
+// Case : You're looking for an apartment and you received a list of blocks with their own service/facility.
 
-import path from 'path'
-import fs from 'fs'
-import archiver from 'archiver';
+// To get your ideal apartment, you want to find the block with the closest distance from all of the facilities. Please create an algorithm for that solution.
 
-const app = express();
-app.use(express.json())
-const port = process.env.PORT || 3000;
+// const blocks = [
+//   { gym: false, school: true, store: false },
+//   { gym: true, school: false, store: false },
+//   { gym: true, school: true, store: false },
+//   { gym: false, school: true, store: false },
+//   { gym: false, school: true, store: true },
+// ];
 
-app.get('/', async (req: Request, res: Response) => {
-    const { targetPath, downloadName } = req.body
+// For the example above, if [gym, school, store] is the requirement, index 3 is the best location for your apartment.
+// Example:
+// Reqs: [gym, school, store]
+// Block 0: [1, 0, 4] = 4
+// Block 1: [0, 1, 3] = 3
+// Block 2: [0, 0, 2] = 2
+// Block 3: [1, 0, 1] = 1
+// Block 4: [2,0,0] = 2
+// Block with the most minimum distance to all facilities: Block 3
 
-    if (!targetPath) {
-        res.status(400).json({ error: 'Target path is required' })
+// Func: Input: Blocks, Reqs
+// Output: Block with the most minimum distance to all facilities
+
+// implement the solution with O(n) time complexity.
+
+type TBlocks = Array<number>;
+
+const blocks: Array<TBlocks> = [
+  [1, 0, 4],
+  [0, 1, 3],
+  [0, 0, 2],
+  [1, 0, 1],
+  [2, 0, 0],
+];
+
+function findMinimumLocation(blocks: Array<TBlocks>): string {
+  const maxLocation: Array<number> = [];
+
+  for (let i = 0; i < blocks.length; i++) {
+    maxLocation.push(findMaxLocation(blocks[i]));
+  }
+
+  return `Block ${findMinLocationIndex(maxLocation)}`;
+}
+
+function findMaxLocation(arrOfNumber: Array<number>): number {
+  let max = Number.MIN_SAFE_INTEGER;
+  for (const item of arrOfNumber) {
+    if (item > max) {
+      max = item;
     }
+  }
 
-    if (!fs.existsSync(targetPath)) {
-        res.status(404).send('File not found')
-        return
+  return max;
+}
+
+function findMinLocationIndex(arrOfNumber: Array<number>): number {
+  let min: number = Number.MAX_SAFE_INTEGER;
+  let index: number = 0;
+  for (let i = 0; i < arrOfNumber.length; i++) {
+    if (arrOfNumber[i] < min) {
+      min = arrOfNumber[i];
+      index = i;
     }
+  }
 
-    try {
-        const files = fs.readdirSync(targetPath)
+  return index;
+}
 
-        if (files.length === 0) {
-            return res.status(404).send('No files')
-        }
-
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${downloadName ? downloadName : 'app'}.zip"`);
-
-        const archive = archiver('zip', {
-            zlib: { level: 1 }
-        })
-
-        archive.pipe(res)
-
-        files.forEach(file => {
-            const videoFilePath = path.join(targetPath, file)
-            archive.file(videoFilePath, { name: file })
-        })
-        archive.finalize()
-    } catch (err) {
-        console.log(err)
-        res.status(500).send('Error')
-    }
-});
-
-app.get('/list-all', async (req, res) => {
-    const { targetPath, downloadName } = req.body
-
-    if (!targetPath) {
-        res.status(400).json({ error: 'Target path is required' })
-    }
-
-    if (!fs.existsSync(targetPath)) {
-        res.status(404).send('File not found')
-        return
-    }
-
-    try {
-        const files = fs.readdirSync(targetPath)
-
-        if (files.length === 0) {
-            return res.status(404).send('No files')
-        }
-
-        res.send(files)
-    } catch (err) {
-        console.log(err)
-        res.status(500).send('Error')
-    }
-})
-
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+console.log(findMinimumLocation(blocks));

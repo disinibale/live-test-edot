@@ -1,2 +1,7 @@
 /dist
 /node_modules
+/coverage
+
+/src/controllers
+/src/data
+/src/routes
